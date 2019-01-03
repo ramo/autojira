@@ -15,15 +15,15 @@ class WorkFlow:
             241 - Passed testing
             121 - Closed
         """
-        self.OPEN = 271
-        self.SPRINT_READY = 151
-        self.CURRENT_SPRINT = 161
-        self.BEGIN_WORK = 91
-        self.CODE_REVIEW = 191
-        self.INTEGRATION = 201
-        self.TEST = 21
-        self.VERIFY = 241
-        self.CLOSED = 121
+        self.OPEN = (271, 'Open')
+        self.SPRINT_READY = (151, 'Sprint Ready')
+        self.CURRENT_SPRINT = (161, 'Current Sprint')
+        self.BEGIN_WORK = (91, 'Begin work')
+        self.CODE_REVIEW = (191, 'Code Review')
+        self.INTEGRATION = (201, 'Integration')
+        self.TEST = (21, 'Test')
+        self.VERIFY = (241, 'Verify')
+        self.CLOSED = (121, 'Closed')
 
         self.__wfo = [
             self.OPEN,
@@ -73,31 +73,31 @@ class AutoJIRA:
             issues += self.__jc.search_issues(jql_str=kwargs['jql'])
 
         if 'key' in kwargs:
-            issues += self.__jc.issue(kwargs['key'])
+            issues.append(self.__jc.issue(kwargs['key']))
 
         if 'file' in kwargs:
             with open(kwargs['file']) as fp:
                 for key in fp.readlines():
-                    issues += self.__jc.issue(key.strip())
+                    issues.append(self.__jc.issue(key.strip()))
 
         return issues
 
     def __move(self, issue, n):
-        if n not in list(map(lambda x: int(x['id']), self.__jc.transitions(issue))):
+        if n[0] not in list(map(lambda x: int(x['id']), self.__jc.transitions(issue))):
             self.__move(issue, self.__wf.previous(n))
-        self.__jc.transition_issue(issue, n)
+        self.__jc.transition_issue(issue, n[0])
 
     def move(self, status, **kwargs):
-        if self.__wf.valid(status):
+        if not self.__wf.valid(status):
             raise ValueError('Not a valid status')
 
-        issues = self.__get_issues(kwargs)
+        issues = self.__get_issues(**kwargs)
 
         if len(issues) == 0:
             raise ValueError("No issues to move")
 
         for issue in issues:
-            print('Moving the ticket: {} to {}'.format(issue.key, status))
+            print('Moving the ticket: {} to {}'.format(issue.key, status[1]))
             self.__move(issue, status)
 
             if 'comments' in kwargs:
